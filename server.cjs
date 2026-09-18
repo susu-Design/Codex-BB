@@ -9,7 +9,7 @@ files['/rage-themes.css'] = 'rage-themes.css';
 files['/rage.js'] = 'rage.js';
 files['/rage-painter.js'] = 'rage-painter.js';
 for (const file of ['head-tracker.js', 'head-tracker-worker.js',
-  'vendor/mediapipe/vision_bundle.cjs', 'vendor/mediapipe/blaze_face_short_range.tflite',
+  'vendor/mediapipe/vision_bundle.cjs', 'vendor/mediapipe/vision_bundle.js', 'vendor/mediapipe/blaze_face_short_range.tflite',
   'vendor/mediapipe/wasm/vision_wasm_internal.js', 'vendor/mediapipe/wasm/vision_wasm_internal.wasm',
   'vendor/mediapipe/wasm/vision_wasm_nosimd_internal.js', 'vendor/mediapipe/wasm/vision_wasm_nosimd_internal.wasm']) files[`/${file}`] = file;
 files['/card-preview.html'] = 'card-preview.html';

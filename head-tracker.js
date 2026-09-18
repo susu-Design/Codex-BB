@@ -6,7 +6,7 @@ class HeadTracker {
     this.lastVideoTime = -1;
     this.status('头部追踪加载中');
     try {
-      this.worker = new Worker(new URL('head-tracker-worker.js', document.baseURI));
+      this.worker = new Worker(new URL('head-tracker-worker.js?v=4', document.baseURI));
       this.worker.onmessage = ({ data }) => {
         if (this.disposed) return;
         if (data.type === 'ready') { this.ready = true; this.status('等待头部进入画面'); }

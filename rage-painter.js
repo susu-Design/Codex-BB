@@ -45,19 +45,22 @@ class RagePainter {
       this.ctx.scale(scale, scale);
       this.ctx.translate(-240, -145);
     } else this.ctx.scale(w / 480, h / 360);
-    if (tier === 1) this.smoke(t);
-    else if (style === 'green') {
+    const initial = tier === 1;
+    if (initial) { this.ctx.save(); this.ctx.globalAlpha = .30; }
+    if (style === 'green') {
       this.greenAtmosphere(t, tier);
       this.greenFlames(t, tier);
       this.greenSparks(t, tier);
       if (tier === 3) this.greenEnergy(t, burst && !this.motion.matches);
     } else {
-      this.atmosphere(t, tier);
-      this.corona(t, tier);
-      this.flames(t, tier);
-      this.sparks(t, tier);
+      // Purple always uses the Unity-derived palette; the old gold phase is retired.
+      this.atmosphere(t, 3);
+      this.corona(t, 3);
+      this.flames(t, 3);
+      this.sparks(t, 3);
       if (tier === 3) this.energy(t, burst && !this.motion.matches);
     }
+    if (initial) this.ctx.restore();
     // A soft clear zone protects the face even when particle paths cross it.
     this.ctx.globalCompositeOperation = 'destination-out';
     const mask = this.ctx.createRadialGradient(240, 145, 55, 240, 145, 113);
@@ -71,6 +74,9 @@ class RagePainter {
     const shade = c.createRadialGradient(240, 150, 72, 240, 170, 300);
     shade.addColorStop(0, '#020b0600'); shade.addColorStop(.58, '#062b1418'); shade.addColorStop(1, '#00140782');
     c.fillStyle = shade; c.fillRect(0, 0, 480, 360);
+    const haze = c.createLinearGradient(0, 105, 0, 360);
+    haze.addColorStop(0, '#39ff7000'); haze.addColorStop(.48, '#31e85924'); haze.addColorStop(1, '#62ff493e');
+    c.fillStyle = haze; c.fillRect(0, 80, 480, 280);
     for (const x of [22, 458]) {
       const g = c.createRadialGradient(x, 245, 0, x, 245, 245);
       g.addColorStop(0, '#86ff393e'); g.addColorStop(.46, '#29d45e22'); g.addColorStop(1, '#0000');
@@ -103,7 +109,7 @@ class RagePainter {
         const height = (130 + this.random(i + 74) * 215) * (.86 + .14 * Math.sin(phase));
         const tipX = x + 10 + Math.sin(phase * .8) * 25;
         const tipY = 382 - height;
-        const width = 5 + this.random(i + 117) * 15;
+        const width = 7 + this.random(i + 117) * 19;
         for (let pass = 0; pass < 3; pass++) {
           const scale = [1, .5, .16][pass];
           const g = c.createLinearGradient(0, 380, 0, tipY);
@@ -157,32 +163,6 @@ class RagePainter {
       }
     }
     c.restore(); c.globalAlpha = 1;
-  }
-  smoke(t) {
-    const c = this.ctx;
-    // Two plumes curl outwards from the temples; no rectangular texture.
-    for (let side = 0; side < 2; side++) {
-      const sign = side ? 1 : -1;
-      for (let i = 0; i < 14; i++) {
-        const age = (t * .29 + i / 14) % 1;
-        const x = 240 + sign * (97 + age * 49) + Math.sin(age * 8 + i) * 13;
-        const y = 192 - age * 195;
-        const r = 8 + age * 28;
-        c.globalAlpha = Math.sin(age * Math.PI) * .28;
-        const g = c.createRadialGradient(x - r * .2, y - r * .2, 0, x, y, r);
-        g.addColorStop(0, '#ede5d4'); g.addColorStop(.4, '#adb0ad'); g.addColorStop(1, '#69707400');
-        c.fillStyle = g;
-        c.beginPath();
-        for (let k = 0; k <= 24; k++) {
-          const a = k / 24 * Math.PI * 2;
-          const radius = r * (1 + .13 * Math.sin(k * 2.5 + i));
-          const px = x + Math.cos(a) * radius, py = y + Math.sin(a) * radius * .8;
-          if (!k) c.moveTo(px, py); else c.lineTo(px, py);
-        }
-        c.closePath(); c.fill();
-      }
-    }
-    c.globalAlpha = 1;
   }
   atmosphere(t, tier) {
     const c = this.ctx;

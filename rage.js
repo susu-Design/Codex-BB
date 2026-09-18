@@ -120,7 +120,7 @@ function mountRage() {
   stage.insertAdjacentHTML('beforebegin', `<div class="vfx-style-picker" role="group" aria-label="选择自己的怒气特效"><span>我的气场</span><button type="button" data-vfx-style="purple">紫焰</button><button type="button" data-vfx-style="green">绿焰 · 高密度</button></div>`);
   document.querySelectorAll('[data-vfx-style]').forEach(button => button.onclick = () => setRageStyle(button.dataset.vfxStyle));
   if (state.sessionMode === 'demo') {
-    stage.insertAdjacentHTML('beforebegin', '<div class="vfx-audition"><span>特效试映 · 仅示范局</span><button data-vfx-level="0">平静</button><button data-vfx-level="25">冒烟</button><button data-vfx-level="50">金色燃烧</button><button data-vfx-level="100">紫焰爆气</button></div>');
+    stage.insertAdjacentHTML('beforebegin', '<div class="vfx-audition"><span>特效试映 · 仅示范局</span><button data-vfx-level="0">平静</button><button data-vfx-level="25">气场初现</button><button data-vfx-level="50">气焰增强</button><button data-vfx-level="100">满格爆气</button></div>');
     document.querySelectorAll('[data-vfx-level]').forEach(button => button.onclick = () => {
       if (state.paused) return;
       rage.self = rage.partner = Number(button.dataset.vfxLevel);
@@ -129,7 +129,7 @@ function mountRage() {
       updateRage();
     });
   }
-  stage.insertAdjacentHTML('afterend', `<details class="rage-lab"><summary>怒气规则与特效试验</summary><p>每两张嘲讽卡增加接收者 25 点；每两次独立声峰增加说话者 25 点。满格爆气 1.8 秒，随后保留燃烧气场。数值仅用于游戏，不代表真实情绪。</p><p>开启镜头后自动在本机检测头部，特效随位置、大小和倾斜变化；未找到人脸时淡出。未开镜头时为固定插画演示。不是全身分割。语言 AI 尚未接入，下方仅为手动文本规则试验，不监听或上传语音。</p>${state.sessionMode === 'demo' ? '<button type="button" data-rage-test="peak">模拟一次声音骤升</button><button type="button" data-rage-test="card">模拟收到一张嘲讽卡</button><button type="button" data-rage-test="reset">重置演示怒气</button>' : ''}<form id="rage-language"><label>手动测试疑似对抗表达<input name="utterance" maxlength="240" placeholder="例如：你从来都不听我说话" required></label><button>测试本地规则</button><output aria-live="polite"></output></form></details>`);
+  stage.insertAdjacentHTML('afterend', `<details class="rage-lab"><summary>怒气规则与特效试验</summary><p>每两张嘲讽卡增加接收者 25 点；每两次独立声峰增加说话者 25 点。怒气控制 Unity 紫焰或绿色高密度气场的强度；满格爆气 1.8 秒。数值仅用于游戏，不代表真实情绪。</p><p>开启镜头后自动在本机检测头部，特效随位置、大小和倾斜变化；未找到人脸时淡出。未开镜头时为固定插画演示。不是全身分割。语言 AI 尚未接入，下方仅为手动文本规则试验，不监听或上传语音。</p>${state.sessionMode === 'demo' ? '<button type="button" data-rage-test="peak">模拟一次声音骤升</button><button type="button" data-rage-test="card">模拟收到一张嘲讽卡</button><button type="button" data-rage-test="reset">重置演示怒气</button>' : ''}<form id="rage-language"><label>手动测试疑似对抗表达<input name="utterance" maxlength="240" placeholder="例如：你从来都不听我说话" required></label><button>测试本地规则</button><output aria-live="polite"></output></form></details>`);
   document.querySelectorAll('[data-rage-test]').forEach(button=>button.onclick=()=>{
     if (state.paused) return;
     if (button.dataset.rageTest === 'peak') ragePeak();
@@ -159,7 +159,7 @@ function updateRage() {
     if (gauge) {
       gauge.dataset.tier=tier;
       gauge.dataset.style=rage.vfxStyle[side];
-      gauge.querySelector('[data-rage-label]').textContent=['平静','冒烟','燃烧','MAX'][tier];
+      gauge.querySelector('[data-rage-label]').textContent=['平静','气场初现','气焰增强','MAX'][tier];
       gauge.querySelector('[data-rage-value]').textContent=`${rage[side]} / 100`;
       gauge.querySelector('[data-rage-count]').textContent=`收牌 ${rage.cards[side] % 2}/2${side==='self' ? ` · 声峰 ${rage.peaks % 2}/2` : ''}`;
       gauge.querySelector('.rage-fill').style.width=`${rage[side]}%`;

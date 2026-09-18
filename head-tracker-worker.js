@@ -2,7 +2,7 @@
 self.exports = {};
 let detector;
 try {
-  importScripts('vendor/mediapipe/vision_bundle.cjs');
+  importScripts('vendor/mediapipe/vision_bundle.js?v=4');
   exports.FilesetResolver.forVisionTasks(new URL('vendor/mediapipe/wasm', self.location).href)
     .then(files => exports.FaceDetector.createFromOptions(files, {
       baseOptions: { modelAssetPath: new URL('vendor/mediapipe/blaze_face_short_range.tflite', self.location).href, delegate: 'CPU' },
