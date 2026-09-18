@@ -1,0 +1,38 @@
+.vfx-style-picker {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+  padding: 8px 18px;
+  background: #171a18;
+  color: #c9cbbf;
+  font: 11px monospace;
+  border-bottom: 1px solid #393d36;
+}
+.vfx-style-picker button {
+  border: 1px solid #555c51;
+  background: #252a26;
+  color: #d9dcd4;
+  padding: 6px 11px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.vfx-style-picker button.active[data-vfx-style="purple"] {
+  color: #faeaff;
+  border-color: #ce75f2;
+  background: #5d276f;
+  box-shadow: 0 0 12px #c259e966;
+}
+.vfx-style-picker button.active[data-vfx-style="green"] {
+  color: #efffd5;
+  border-color: #a7ec47;
+  background: #315d19;
+  box-shadow: 0 0 12px #83e13c66;
+}
+.rage-gauge[data-style="green"] .rage-fill {
+  background: linear-gradient(90deg, #86ad42, #b7f052);
+  box-shadow: 0 0 12px #8be045;
+}
+@media (max-width: 600px) {
+  .vfx-style-picker { justify-content: center; }
+}

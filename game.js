@@ -130,9 +130,11 @@ function go(page) {
 }
 
 function render() {
+  stopRagePainters();
   document.body.classList.toggle('cold', state.style === 'cold');
   app.innerHTML = ({ home, setup, room, report }[state.page] || home)();
   attachVideo();
+  mountRage();
   updateCooldowns();
 }
 
@@ -180,17 +182,31 @@ function heatMeter() {
   return `<div class="heat-box"><div class="heat-copy"><span>舞台热度 · ${label}</span><b>${state.heat}</b></div><div class="heat-track"><i style="width:${state.heat}%"></i></div><small>只控制视觉强度，不代表愤怒、对错或关系质量。</small></div>`;
 }
 
+const reactionEffects = new Set(['hehe', 'question', 'applause']);
+let effectSequence = 0;
+const voiceEffects = new Set(['voice', 'impact', 'blast']);
+let voiceEffectTimer;
+
+function voiceEffectMarkup() {
+  return '<div class="voice-fx" aria-hidden="true"><div class="voice-edge"></div><div class="voice-ripple"></div><div class="voice-wave">' +
+    Array.from({ length: 17 }, (_, i) => `<i style="--bar:${1 - Math.abs(i - 8) / 10};--delay:${i * -0.07}s"></i>`).join('') + '</div></div>';
+}
+
+function clearVoiceVisuals() {
+  clearTimeout(voiceEffectTimer);
+  const layer = document.querySelector('.voice-fx');
+  if (layer) { layer.className = 'voice-fx'; layer.style.setProperty('--level', 0); }
+  loudSince = 0;
+}
+
 function effectMarkup() {
+  if (reactionEffects.has(state.stageEffect)) {
+    return `<img class="card-reaction" src="assets/reactions/${state.stageEffect}.gif?play=${effectSequence}" alt="" aria-hidden="true" draggable="false">`;
+  }
   const effects = {
     speech: '<div class="fx-sticker fx-speech">我还没说完</div>',
-    hehe: '<div class="fx-sticker fx-hehe">呵呵</div>',
-    question: '<div class="fx-rain">? ? ? ? ? ?</div>',
-    applause: '<div class="fx-sticker fx-applause">掌声送给你</div>',
     receipt: '<div class="fx-receipt">旧账已送达<br><small>RECEIPT FOUND</small></div>',
-    mark: '<div class="fx-sticker fx-mark">这句记住了</div>',
-    voice: '<div class="fx-voice">正在输出</div>',
-    impact: '<div class="fx-impact">!</div>',
-    blast: '<div class="fx-blast">砰</div>'
+    mark: '<div class="fx-sticker fx-mark">这句记住了</div>'
   };
   return effects[state.stageEffect] || '';
 }
@@ -229,10 +245,10 @@ function room() {
   const remoteVideo = remoteStream && state.partnerCam ? '<video class="remote-video" autoplay playsinline></video>' : person(true);
   const roomTools = realCall ? `<button class="secondary compact" data-action="copy-invite">复制邀请链接</button><span class="demo" id="clock">${time(state.elapsed)}</span>` : `<span class="demo" id="clock">${time(state.elapsed)}</span>`;
   return `${header('02 / THE ROOM IS YOURS', esc(state.topic), realCall ? `房间 ${esc(state.roomCode.toUpperCase())} · ${connectionLabel}` : '单人示范会议 · 随时说话，随时出招', roomTools)}
-    <div class="room-layout"><section><div class="voice-reactor"><div><span>VOICE REACTOR / 声音反应器</span><strong>${state.voiceOn ? '正在听取本地音量' : '尚未启用'}</strong><small>${state.voiceOn ? '普通说话产生波纹，突然升高触发冲击线，持续高声触发爆炸。' : '点击开启后只检测声音强弱，不录音、不上传。'}</small></div><button class="secondary" data-action="voice">${state.voiceOn ? '关闭声音检测' : '开启声音检测'}</button><div class="voice-level"><i id="voice-level"></i></div></div>
-    <div class="stage ${!state.effects || state.paused ? 'still' : ''} ${state.stageEffect ? `fx-${state.stageEffect}` : ''}" style="--heat:${state.heat}">
+    <div class="room-layout"><section><div class="voice-reactor"><div><span>VOICE REACTOR / 声音反应器</span><strong>${state.voiceOn ? '正在听取本地音量' : '尚未启用'}</strong><small>${state.voiceOn ? '说话产生底部声纹，音量升高点亮边缘，持续高声出现轻波纹。视频画面始终稳定。' : '点击开启后只检测声音强弱，不录音、不上传。'}</small></div><button class="secondary" data-action="voice">${state.voiceOn ? '关闭声音检测' : '开启声音检测'}</button><div class="voice-level"><i id="voice-level"></i></div></div>
+    <div class="stage ${!state.effects || state.paused ? 'still' : ''}" style="--heat:${state.heat}">
       <div class="video-tile">${state.paused ? person() : localVideo}<span class="tile-name">${esc(state.name)} · ${state.cam ? '本人' : '镜头已关'}</span><span class="tile-state">${state.muted ? '已静音' : realCall ? 'MIC ON' : '模拟音频'}</span>${signal()}</div>
-      <div class="video-tile">${remoteVideo}<span class="tile-name">${esc(state.partnerName)} · ${remoteStream ? state.partnerCam ? '远程画面' : '镜头已关' : connectionLabel}</span><span class="tile-state ${state.connectionStatus === 'connected' ? 'live' : ''}">${state.partnerMuted && state.connectionStatus === 'connected' ? 'MUTED' : connectionCode}</span>${signal()}</div><span class="stage-vs">${state.style === 'cold' ? '讨论中' : 'VS'}</span><div class="stage-burst" aria-hidden="true">${'✦'.repeat(Math.ceil(state.heat / 20))}</div><div class="fx-layer" aria-live="polite">${effectMarkup()}</div></div>
+      <div class="video-tile">${remoteVideo}<span class="tile-name">${esc(state.partnerName)} · ${remoteStream ? state.partnerCam ? '远程画面' : '镜头已关' : connectionLabel}</span><span class="tile-state ${state.connectionStatus === 'connected' ? 'live' : ''}">${state.partnerMuted && state.connectionStatus === 'connected' ? 'MUTED' : connectionCode}</span>${signal()}</div><span class="stage-vs">${state.style === 'cold' ? '讨论中' : 'VS'}</span><div class="stage-burst" aria-hidden="true">${'✦'.repeat(Math.ceil(state.heat / 20))}</div>${voiceEffectMarkup()}<div class="fx-layer" aria-live="polite">${effectMarkup()}</div></div>
       <div class="ribbon" id="ribbon">${realCall ? `${connectionLabel} · 卡牌与特效会同步给双方` : '模拟声音舞台 · 出牌会改变视觉热度'}</div>${heatMeter()}
       <div class="control-bar"><button class="control ${state.muted ? 'active' : ''}" data-action="mute">${state.muted ? '取消静音' : '通话静音'}${realCall ? '' : ' · 模拟'}</button><button class="control" data-action="camera">${state.cam ? '关闭镜头' : '开启镜头'}</button><button class="control" data-action="effects">特效 ${state.effects ? '开' : '关'}</button><button class="control" data-action="toggleAI">AI ${state.ai ? '示例已启用' : '已关闭'}</button><button class="control end" data-action="end">结束并复盘 ↗</button></div>
       <div class="cards-head"><h3>你的吵架卡组</h3><span>卡牌改变叙事，不决定输赢</span></div><div class="cards game-six">${cardButtons}</div>
@@ -253,7 +269,7 @@ function achievements() {
   if (state.events.some(event => event.type === 'hehe')) earned.push(['冷笑投放员', '精准释放了一枚呵呵']);
   if (state.events.some(event => event.type === 'question')) earned.push(['问号天气制造者', '让疑惑覆盖了整个会议室']);
   if (state.events.some(event => event.type === 'applause')) earned.push(['气氛组组长', '为对方送上了意味深长的掌声']);
-  if (state.events.some(event => event.type === 'auto-blast')) earned.push(['声控施法者', '用声音亲自触发了漫画爆炸']);
+  if (state.events.some(event => event.type === 'auto-blast')) earned.push(['声控施法者', '用声音点亮了边缘波纹']);
   if (state.events.some(event => event.type === 'pause')) earned.push(['体面离场权', '使用暂停保护了选择权']);
   if (!earned.length) earned.push(['纯粹表达者', '没有使用任何特殊卡牌']);
   return earned.map(item => `<div class="badge"><span>✳</span><strong>${item[0]}</strong><small>${item[1]}</small></div>`).join('');
@@ -407,6 +423,9 @@ function applyPause(fromPartner = false) {
 
 function handlePeerData(message) {
   if (!message || typeof message !== 'object') return;
+  if (message.type === 'rage') { receiveRage(message); return; }
+  if (message.type === 'rage-style') { receiveRageStyle(message); return; }
+  if (message.type === 'rage-pulse') { rage.burstUntil.partner = Date.now() + 1800; updateRage(); return; }
   if (message.type === 'hello') {
     state.partnerName = String(message.name || '伴侣').slice(0, 20);
     if (state.role === 'host') sendSessionState();
@@ -422,6 +441,7 @@ function handlePeerData(message) {
     return;
   }
   if (message.type === 'card') {
+    countRageCard('self', String(message.cardType || ''));
     const text = String(message.text || '释放了一个互动').slice(0, 220);
     const cardType = String(message.cardType || 'remote');
     state.events.push({ text, type: cardType, actor: state.partnerName, detail: String(message.detail || '').slice(0, 160), at: Number(message.at) || state.elapsed });
@@ -468,6 +488,7 @@ function wireDataConnection(connection) {
   dataConnection = connection;
   connection.on('open', () => {
     sendPeer({ type: 'hello', name: state.name });
+    syncRage();
     if (state.role === 'host') sendSessionState();
   });
   connection.on('data', handlePeerData);
@@ -623,6 +644,7 @@ async function camera() {
 }
 
 function stopVoice() {
+  clearVoiceVisuals();
   if (audioStream && !voiceUsesCallStream) audioStream.getTracks().forEach(track => track.stop());
   if (audioContext) audioContext.close();
   cancelAnimationFrame(voiceFrame);
@@ -665,22 +687,30 @@ async function toggleVoice() {
 }
 
 function triggerEffect(effect, type = '', record = false) {
-  if (!state.effects || state.page !== 'room') return;
+  if (!state.effects || state.paused || state.page !== 'room') return;
+  if (voiceEffects.has(effect)) {
+    const layer = document.querySelector('.voice-fx');
+    if (!layer) return;
+    clearTimeout(voiceEffectTimer);
+    layer.className = `voice-fx voice-${effect}`;
+    voiceEffectTimer = setTimeout(() => { layer.className = 'voice-fx'; }, effect === 'blast' ? 1600 : 1000);
+    if (record) {
+      const text = type === 'auto-blast' ? '持续高声触发边缘波纹' : '声音升高触发边缘光晕';
+      addEvent(text, type, state.name);
+      if (state.sessionMode === 'real') sendPeer({ type: 'effect', effect, effectType: type, text });
+    }
+    return;
+  }
+  const sequence = ++effectSequence;
   state.stageEffect = effect;
   const stage = document.querySelector('.stage');
   if (stage) {
     [...stage.classList].filter(name => name.startsWith('fx-')).forEach(name => stage.classList.remove(name));
-    stage.classList.add(`fx-${effect}`);
     const layer = stage.querySelector('.fx-layer');
     if (layer) layer.innerHTML = effectMarkup();
   }
-  if (record) {
-    const text = type === 'auto-blast' ? '持续高声触发漫画爆炸' : '声音升高触发冲击线';
-    addEvent(text, type, state.name);
-    if (state.sessionMode === 'real') sendPeer({ type: 'effect', effect, effectType: type, text });
-  }
   setTimeout(() => {
-    if (state.stageEffect !== effect) return;
+    if (state.stageEffect !== effect || sequence !== effectSequence) return;
     state.stageEffect = '';
     const currentStage = document.querySelector('.stage');
     if (currentStage) {
@@ -688,11 +718,18 @@ function triggerEffect(effect, type = '', record = false) {
       const layer = currentStage.querySelector('.fx-layer');
       if (layer) layer.innerHTML = '';
     }
-  }, effect === 'blast' ? 1200 : 850);
+  }, reactionEffects.has(effect) ? 1800 : effect === 'blast' ? 1200 : 850);
 }
 
 function monitorVoice() {
   if (!analyser || !state.voiceOn) return;
+  if (state.paused || state.muted || !state.effects || state.page !== 'room') {
+    clearVoiceVisuals();
+    const meter = document.querySelector('#voice-level');
+    if (meter) meter.style.width = '0%';
+    voiceFrame = requestAnimationFrame(monitorVoice);
+    return;
+  }
   const data = new Uint8Array(analyser.fftSize);
   analyser.getByteTimeDomainData(data);
   let total = 0;
@@ -704,28 +741,10 @@ function monitorVoice() {
   const level = Math.min(100, Math.round(rms * 420));
   const meter = document.querySelector('#voice-level');
   if (meter) meter.style.width = `${level}%`;
-  const stage = document.querySelector('.stage');
-  if (stage) stage.style.setProperty('--voice', level / 100);
+  const layer = document.querySelector('.voice-fx');
+  if (layer) layer.style.setProperty('--level', rms > 0.025 ? level / 100 : 0);
   const now = Date.now();
-  if (rms > 0.1) {
-    if (!loudSince) loudSince = now;
-    if (now - loudSince > 1500 && now - lastAutoEffect > 3000) {
-      lastAutoEffect = now;
-      loudSince = 0;
-      state.heat = Math.min(96, state.heat + 9);
-      state.sparks += 1;
-      triggerEffect('blast', 'auto-blast', true);
-    }
-  } else {
-    loudSince = 0;
-  }
-  if (rms > 0.14 && loudSince && now - loudSince < 350 && now - lastAutoEffect > 2600) {
-    lastAutoEffect = now;
-    state.heat = Math.min(96, state.heat + 5);
-    triggerEffect('impact', 'auto-impact', true);
-  } else if (rms > 0.045 && state.stageEffect === '' && now - lastAutoEffect > 850) {
-    triggerEffect('voice');
-  }
+  sampleRageVoice(rms, now);
   voiceFrame = requestAnimationFrame(monitorVoice);
 }
 
@@ -736,6 +755,7 @@ function saveSetup() {
 }
 
 function resetRoom() {
+  resetRage();
   state.events = [];
   state.uses = {};
   state.cooldowns = {};
@@ -828,6 +848,7 @@ function partnerReply(type) {
 }
 
 function useCard(type, detail = '') {
+  if (state.sessionMode === 'demo') countRageCard('partner', type);
   const definition = cardDefs.find(card => card.id === type);
   state.uses[type] = (state.uses[type] || 0) + 1;
   state.cooldowns[type] = Date.now() + (type === 'past' ? 12000 : 7000);
@@ -846,7 +867,7 @@ function useCard(type, detail = '') {
   if (state.sessionMode === 'real') {
     sendPeer({ type: 'card', cardType: type, detail, text: messages[type], effect: definition.effect, heat: state.heat, at: state.elapsed });
   }
-  toast(messages[type]);
+  if (!reactionEffects.has(definition.effect)) toast(messages[type]);
   render();
   triggerEffect(definition.effect);
   if (state.sessionMode === 'demo' && type !== 'pause') partnerReply(type);
@@ -902,7 +923,7 @@ document.addEventListener('click', event => {
     case 'copy-invite': copyInvite(); break;
     case 'skip': begin(); break;
     case 'mute': state.muted = !state.muted; setTrackState(); if (state.sessionMode === 'real') sendPeer({ type: 'control', action: 'mute', muted: state.muted }); render(); toast(state.sessionMode === 'real' ? state.muted ? '麦克风已静音。' : '麦克风已恢复。' : '示范局仅切换按钮状态。'); break;
-    case 'effects': state.effects = !state.effects; render(); break;
+    case 'effects': state.effects = !state.effects; clearVoiceVisuals(); state.stageEffect = ''; render(); break;
     case 'toggleAI': state.ai = !state.ai; render(); toast(state.ai ? '会后显示模拟 AI 战报' : 'AI 已关闭，只记录游戏事件'); break;
     case 'resume': state.paused = false; setTrackState(); if (state.sessionMode === 'real') sendPeer({ type: 'control', action: 'resume' }); modal.close(); render(); toast('通话已恢复。'); break;
     case 'end': if (modal.open) modal.close(); if (state.sessionMode === 'real') sendPeer({ type: 'control', action: 'end' }); setTimeout(() => { stopClock(); go('report'); }, state.sessionMode === 'real' ? 120 : 0); break;
@@ -918,4 +939,9 @@ modal.addEventListener('cancel', event => {
 });
 
 window.addEventListener('pagehide', () => { stopClock(); stopMedia(); });
+window.addEventListener('pagehide', stopRagePainters);
+if (new URLSearchParams(location.search).get('preview') === 'vfx' && !invitedRoom) {
+  state.page = 'room';
+  state.sessionMode = 'demo';
+}
 render();

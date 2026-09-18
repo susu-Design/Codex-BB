@@ -1,0 +1,53 @@
+.card-reaction {
+  position: absolute;
+  bottom: 8px;
+  left: calc(50% - 80px);
+  width: 160px;
+  height: 160px;
+  object-fit: contain;
+  pointer-events: none;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  animation: reaction-fade 1.8s linear both;
+}
+@keyframes reaction-fade {
+  0% { opacity: 0; }
+  8%, 84% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@media (max-width: 600px) {
+  .card-reaction { width: 120px; height: 120px; left: calc(50% - 60px); bottom: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-reaction { animation: none; }
+}
+
+/* Effects live on overlays, never on the video layout or camera pixels. */
+.stage::after { content: none; }
+.rage-canvas { display: block; width: 100%; height: 100%; }
+.head-tracking-status { position:absolute; left:8px; bottom:42px; z-index:7; color:#fff; background:#151921a8; font:9px system-ui,sans-serif; padding:4px 7px; border-radius:4px; pointer-events:none; }
+.vfx-audition { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; background: #242820; color: #eee5d2; padding: 10px 14px; }
+.vfx-audition span { font-size: 10px; margin-right: auto; color: #bdbdab; }
+.vfx-audition button { font-size: 11px; border: 1px solid #756b56; color: #f7ce8d; background: #34382c; padding: 8px 12px; border-radius: 4px; }
+.vfx-audition button:hover, .vfx-audition button:focus-visible { background: #55523b; }
+.stage, .stage > .video-tile { animation: none; transform: none; }
+.voice-fx { position: absolute; inset: 0; z-index: 5; pointer-events: none; overflow: hidden; border-radius: 9px; --level: 0; }
+.voice-edge, .voice-ripple { position: absolute; inset: 0; border-radius: inherit; opacity: 0; }
+.voice-edge { box-shadow: inset 0 0 22px 5px #f56c4660; }
+.voice-ripple { border: 2px solid #f4a675; box-shadow: inset 0 0 12px #f4a67555; }
+.voice-wave { position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 3px; height: 20px; opacity: var(--level); transition: opacity .18s; }
+.voice-wave i { width: 3px; border-radius: 4px; background: #f7b899; height: calc(3px + var(--level) * var(--bar) * 17px); transition: height .12s; }
+.voice-impact .voice-edge { animation: voice-glow 1s ease-out both; }
+.voice-blast .voice-edge { animation: voice-glow 1.6s ease-out both; }
+.voice-blast .voice-ripple { animation: voice-edge-ripple 1.6s ease-out both; }
+.voice-voice .voice-wave, .voice-impact .voice-wave, .voice-blast .voice-wave { opacity: .85; }
+.voice-impact .voice-wave i, .voice-blast .voice-wave i, .voice-voice .voice-wave i { height: calc(4px + var(--bar) * 14px); animation: voice-bar .5s ease-in-out infinite alternate; animation-delay: var(--delay); }
+.still .voice-fx { visibility: hidden; }
+@keyframes voice-glow { 0%, 100% { opacity: 0; } 20%, 45% { opacity: .85; } }
+@keyframes voice-edge-ripple { 0% { opacity: 0; inset: 0; } 20% { opacity: .7; } 100% { opacity: 0; inset: 14px; } }
+@keyframes voice-bar { to { height: 4px; } }
+@media (prefers-reduced-motion: reduce) {
+  .voice-fx * { animation: none !important; transition: none; }
+  .voice-impact .voice-edge, .voice-blast .voice-edge { opacity: .5; }
+}
